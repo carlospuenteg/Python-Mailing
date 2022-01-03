@@ -1,8 +1,10 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-#-----------------------------
-from urllib.request import urlopen
+#------------WITH FILE------------
+from email.mime.base import MIMEBase
+from email import encoders
+import os
 
 # https://techexpert.tips/es/python-es/python-enviar-correo-electronico-usando-gmail/
 
@@ -55,12 +57,37 @@ def sendMail():
         if (mail_from != ""):
             break
 
+    while True:
+        fileChoice = input("Do you want to attach the file in the 'attachment' folder? (Y/n): ").lower()
+        if (fileChoice=="y"): 
+            if (os.listdir("attachment")):
+                wFile = True
+                mail_attachment="attachment/"+"".join(os.listdir("attachment"))
+                mail_attachment_name="profile.jpeg"
+                break
+            else:
+                print("There is no attached file. Put it in the 'attachment' folder")
+        elif(fileChoice=="n"): 
+            wFile = False
+            break
+        else:
+            print("Invalid option")
+
     try:
         mimemsg = MIMEMultipart()
         mimemsg['From']=mail_from
         mimemsg['To']=mail_to
         mimemsg['Subject']=mail_subject
         mimemsg.attach(MIMEText(mail_body, 'plain'))
+
+        if (wFile):
+            with open(mail_attachment, "rb") as attachment:
+                mimefile = MIMEBase('application', 'octet-stream')
+                mimefile.set_payload((attachment).read())
+                encoders.encode_base64(mimefile)
+                mimefile.add_header('Content-Disposition', "attachment; filename= %s" % mail_attachment_name)
+                mimemsg.attach(mimefile)
+            
         connection = smtplib.SMTP(host=smtpHost, port=587)
         connection.starttls()
         connection.login(username,password)
